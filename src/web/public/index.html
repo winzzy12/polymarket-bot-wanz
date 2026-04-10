@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Polymarket Trading Bot</title>
+    <link rel="stylesheet" href="/style.css">
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🤖 Polymarket Trading Bot</h1>
+            <div class="status-bar">
+                <span id="connection-status">Connecting...</span>
+            </div>
+        </header>
+
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="btc">Bitcoin Strategy</button>
+            <button class="tab-btn" data-tab="copy">Copy Trader</button>
+            <button class="tab-btn" data-tab="logs">Logs</button>
+        </div>
+
+        <!-- Bitcoin Strategy Tab -->
+        <div id="btc-tab" class="tab-content active">
+            <div class="strategy-controls">
+                <div class="mode-selector">
+                    <label>Mode:</label>
+                    <button class="mode-btn" data-mode="simulation">📊 Simulation</button>
+                    <button class="mode-btn" data-mode="live">💰 Live Trading</button>
+                </div>
+                <div class="action-buttons">
+                    <button id="start-btc" class="btn btn-success">▶ Start</button>
+                    <button id="stop-btc" class="btn btn-danger">⏹ Stop</button>
+                </div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>Status</h3>
+                    <div class="stat-value" id="btc-status">Stopped</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Active Trades</h3>
+                    <div class="stat-value" id="btc-active-trades">0</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Total PnL</h3>
+                    <div class="stat-value" id="btc-pnl">$0.00</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Current Mode</h3>
+                    <div class="stat-value" id="btc-mode">Simulation</div>
+                </div>
+            </div>
+
+            <div class="settings-panel">
+                <h2>Strategy Settings</h2>
+                <div class="form-group">
+                    <label>Market Duration:</label>
+                    <select id="btc-duration">
+                        <option value="5m">5 Minutes</option>
+                        <option value="15m">15 Minutes</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Trading Direction:</label>
+                    <select id="btc-direction">
+                        <option value="up">Up Only</option>
+                        <option value="down">Down Only</option>
+                        <option value="both">Both</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Trade Size (USDC):</label>
+                    <input type="number" id="btc-trade-size" value="10" step="1">
+                </div>
+                <div class="form-group">
+                    <label>Max Position Size (USDC):</label>
+                    <input type="number" id="btc-max-position" value="100" step="10">
+                </div>
+                <div class="form-group">
+                    <label>Stop Loss (%):</label>
+                    <input type="number" id="btc-stop-loss" value="50" step="5">
+                </div>
+                <div class="form-group">
+                    <label>Take Profit (%):</label>
+                    <input type="number" id="btc-take-profit" value="200" step="10">
+                </div>
+                <div class="form-group">
+                    <label>Max Concurrent Trades:</label>
+                    <input type="number" id="btc-max-trades" value="3" min="1" max="10">
+                </div>
+                <button id="save-btc-settings" class="btn btn-primary">Save Settings</button>
+            </div>
+
+            <div class="trades-list">
+                <h2>Active Trades</h2>
+                <div id="btc-trades"></div>
+            </div>
+        </div>
+
+        <!-- Copy Trader Tab -->
+        <div id="copy-tab" class="tab-content">
+            <div class="strategy-controls">
+                <div class="mode-selector">
+                    <label>Mode:</label>
+                    <button class="mode-btn" data-mode="simulation">📊 Simulation</button>
+                    <button class="mode-btn" data-mode="live">💰 Live Trading</button>
+                </div>
+                <div class="action-buttons">
+                    <button id="start-copy" class="btn btn-success">▶ Start</button>
+                    <button id="stop-copy" class="btn btn-danger">⏹ Stop</button>
+                </div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>Status</h3>
+                    <div class="stat-value" id="copy-status">Stopped</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Copied Trades</h3>
+                    <div class="stat-value" id="copy-trades-count">0</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Target Address</h3>
+                    <div class="stat-value" id="copy-target">Not set</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Current Mode</h3>
+                    <div class="stat-value" id="copy-mode">Simulation</div>
+                </div>
+            </div>
+
+            <div class="settings-panel">
+                <h2>Copy Trader Settings</h2>
+                <div class="form-group">
+                    <label>Target Trader Address:</label>
+                    <input type="text" id="copy-target-address" placeholder="0x...">
+                </div>
+                <div class="form-group">
+                    <label>Size Mode:</label>
+                    <select id="copy-size-mode">
+                        <option value="balance">Percentage of Balance</option>
+                        <option value="percentage">Percentage of Max Position</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Size Percentage (%):</label>
+                    <input type="number" id="copy-size-percent" value="10" step="1">
+                </div>
+                <div class="form-group">
+                    <label>Min Trade Size (USDC):</label>
+                    <input type="number" id="copy-min-trade" value="1" step="0.5">
+                </div>
+                <div class="form-group">
+                    <label>Max Position Size (USDC):</label>
+                    <input type="number" id="copy-max-position" value="100" step="10">
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="copy-auto-sell" checked>
+                        Auto Sell Enabled
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label>Auto Sell Profit (%):</label>
+                    <input type="number" id="copy-profit-percent" value="10" step="1">
+                </div>
+                <div class="form-group">
+                    <label>Sell Mode:</label>
+                    <select id="copy-sell-mode">
+                        <option value="market">Market</option>
+                        <option value="limit">Limit</option>
+                    </select>
+                </div>
+                <button id="save-copy-settings" class="btn btn-primary">Save Settings</button>
+            </div>
+
+            <div class="trades-list">
+                <h2>Copied Trades</h2>
+                <div id="copy-trades"></div>
+            </div>
+        </div>
+
+        <!-- Logs Tab -->
+        <div id="logs-tab" class="tab-content">
+            <div class="logs-container">
+                <div class="logs-header">
+                    <h2>Trading Logs</h2>
+                    <button id="clear-logs" class="btn btn-small">Clear</button>
+                </div>
+                <div id="logs-list" class="logs-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/app.js"></script>
+</body>
+</html>
